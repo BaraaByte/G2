@@ -6,8 +6,6 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 from pathlib import Path
-import sys
-sys.dont_write_bytecode = True
 
 class TokenType(Enum):
     # Keywords
@@ -82,7 +80,6 @@ class TokenType(Enum):
     INDENT = 'INDENT'
     DEDENT = 'DEDENT'
     EOF = 'EOF'
-    COMMENT = 'COMMENT'
 
 @dataclass
 class Token:
@@ -190,9 +187,14 @@ class Lexer:
                 self._handle_newline()
                 continue
             
-            # Handle comments
+            # Handle comments - FIXED: properly skip them without generating tokens
             if ch == '/' and self.pos + 1 < len(self.source) and self.source[self.pos + 1] == '/':
                 self._skip_comment()
+                continue
+            
+            # Handle block comments /* ... */
+            if ch == '/' and self.pos + 1 < len(self.source) and self.source[self.pos + 1] == '*':
+                self._skip_block_comment()
                 continue
             
             # Handle numbers
@@ -228,7 +230,7 @@ class Lexer:
         self.col = 1
         self.pos += 1
         
-        # Calculate indentation
+        # Skip whitespace and calculate indentation
         indent = 0
         while self.pos < len(self.source) and self.source[self.pos] in ' \t':
             if self.source[self.pos] == ' ':
@@ -238,6 +240,7 @@ class Lexer:
             self.pos += 1
             self.col += 1
         
+        # Handle indentation changes
         if indent > self.indent_stack[-1]:
             self.indent_stack.append(indent)
             self.tokens.append(Token(TokenType.INDENT, indent, self.line, self.col, self.filename))
@@ -247,15 +250,50 @@ class Lexer:
                 self.tokens.append(Token(TokenType.DEDENT, None, self.line, self.col, self.filename))
     
     def _skip_comment(self):
-        """Skip single-line comments"""
+        """Skip single-line comments without generating tokens"""
+        # Skip the // characters
+        self.pos += 2
+        self.col += 2
+        
+        # Skip until newline or end of file
+        comment_text = []
         start_line = self.line
         start_col = self.col
+        
         while self.pos < len(self.source) and self.source[self.pos] != '\n':
+            comment_text.append(self.source[self.pos])
             self.pos += 1
             self.col += 1
         
-        comment = self.source[start_col-1:self.pos]
-        self.tokens.append(Token(TokenType.COMMENT, comment.strip(), start_line, start_col, self.filename))
+        # Don't generate a token for comments - just skip them
+    
+    def _skip_block_comment(self):
+        """Skip block comments /* ... */ without generating tokens"""
+        # Skip the /* characters
+        self.pos += 2
+        self.col += 2
+        
+        comment_text = []
+        start_line = self.line
+        start_col = self.col
+        
+        while self.pos < len(self.source):
+            if self.source[self.pos] == '*' and self.pos + 1 < len(self.source) and self.source[self.pos + 1] == '/':
+                # Found closing */
+                self.pos += 2
+                self.col += 2
+                break
+            
+            if self.source[self.pos] == '\n':
+                self.line += 1
+                self.col = 1
+            else:
+                self.col += 1
+            
+            comment_text.append(self.source[self.pos])
+            self.pos += 1
+        
+        # Don't generate a token for comments - just skip them
     
     def _scan_number(self):
         """Scan numeric literals"""
@@ -285,7 +323,7 @@ class Lexer:
         self.tokens.append(Token(TokenType.NUMBER, value, start_line, start_col, self.filename))
     
     def _scan_string(self):
-        """Scan string literals"""
+        """Scan string literals with interpolation support"""
         quote = self.source[self.pos]
         start_line = self.line
         start_col = self.col
@@ -443,7 +481,7 @@ class Lexer:
             self.pos += 1
             self.col += 1
         elif ch == '=':
-            self.tokens.append(Token(TokenType.ASSIGN, '=', start_line, start_col, self.filename))  # Simple assignment fallback
+            self.tokens.append(Token(TokenType.ASSIGN, '=', start_line, start_col, self.filename))
             self.pos += 1
             self.col += 1
         elif ch == '<':
