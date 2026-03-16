@@ -1,0 +1,20 @@
+func main() {
+    # Basic math
+    x = 10
+    y = 5
+    
+    print("x = " + str(x))
+    print("y = " + str(y))
+    print("x + y = " + str(x + y))
+    print("x - y = " + str(x - y))
+    print("x * y = " + str(x * y))
+    print("x / y = " + str(x / y))
+    
+    # Using math functions
+    print("sin(π/2) = " + str(sin(pi/2)))
+    print("sqrt(16) = " + str(sqrt(16)))
+    
+    # Random numbers
+    rand = randint(1, 100)
+    print("Random number: " + str(rand))
+}

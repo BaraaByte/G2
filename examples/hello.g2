@@ -1,0 +1,25 @@
+// G2 - Hello World example
+entry main {
+    let name := input("What's your name? ")
+    println("Hello, {name}!")  // String interpolation
+    
+    let age := 14
+    if age >= 18 {
+        println("You're an adult")
+    } elif age >= 13 {
+        println("You're a teenager")
+    } else {
+        println("You're a child")
+    }
+    
+    // Range loop (fixed!)
+    for i in 1..5 {
+        println("Count: {i}")
+    }
+    
+    // List iteration
+    let fruits := ["apple", "banana", "orange"]
+    for fruit in fruits {
+        println("Fruit: {fruit}")
+    }
+}
