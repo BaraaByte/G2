@@ -63,7 +63,7 @@ Program Execution
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/g2
+git clone https://github.com/BaraaByte/g2
 cd g2
 ```
 
